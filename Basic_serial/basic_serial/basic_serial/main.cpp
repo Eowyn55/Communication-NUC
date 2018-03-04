@@ -2,31 +2,56 @@
 #include <cstdlib>
 #include <windows.h>
 #include "header_main.h"
+#include <iostream>
+
+// timer flag
+bool flag_timer = false;
+int cnt = 0;
+MSG Msg;
 
 int main() 
 {
 
-    #define COMMAND_SIZE          (1)
-	char COMMAND_CAPTURE[COMMAND_SIZE] = { 0xff };
+    #define COMMAND_SIZE          (5)
+	char COMMAND_CAPTURE[COMMAND_SIZE] = { 0xe8, 0x03, -0xd0, -0x07, 0x14};
 
 	int err;
 	HANDLE CommPort = NULL;
 
+	//timer
+	UINT TimerId = SetTimer(NULL, 0, 1000, NULL); //1000 milliseconds
+	if (!TimerId) 
+		return 16;
+
 	/* Initialize serial communication. */
-	CommPort = ComPortInit("COM3");
+	CommPort = ComPortInit("COM4");
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
 	}
 
-	/* Send command. */
-	err = sendData(CommPort, COMMAND_CAPTURE, COMMAND_SIZE);
-	if (err) {
-		printf("failed to send command ping");
-		return -1;
+	while(1) 
+	{
+		if (GetMessage(&Msg, NULL, 0, 0)) {
+			if (Msg.message == WM_TIMER) {
+				cnt = cnt + 1;
+				if (cnt == 11) break;
+				/* Send command. */
+				err = sendData(CommPort, COMMAND_CAPTURE, COMMAND_SIZE);
+				if (err) {
+					printf("failed to send command ping");
+					return -1;
+				}
+
+			}
+			DispatchMessage(&Msg);
+		}
 	}
 
+	
+
 	CloseHandle(CommPort);
+	KillTimer(NULL, TimerId);
 
 }
 
@@ -60,6 +85,8 @@ HANDLE ComPortInit(const char * comName)
 	dcb.Parity = 0;
 	dcb.StopBits = 1;
 	dcb.ByteSize = 8;
+	dcb.fDtrControl = 0x00;
+	dcb.fRtsControl = 0x00;
 
 	if (!::SetCommState(comHandle, &dcb)) {
 		printf("fail to set comm state with error %d", GetLastError());
