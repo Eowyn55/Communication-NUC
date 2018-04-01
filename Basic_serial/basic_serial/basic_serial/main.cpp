@@ -13,7 +13,7 @@ int main()
 {
 
     #define COMMAND_SIZE          (5)
-	char COMMAND_CAPTURE[COMMAND_SIZE] = { 0xe8, 0x03, -0xd0, -0x07, 0x14};
+	char COMMAND_CAPTURE[COMMAND_SIZE] = { -0xff, -0x04, 0xe8, 0x03, 0x07};
 
 	int err;
 	HANDLE CommPort = NULL;
