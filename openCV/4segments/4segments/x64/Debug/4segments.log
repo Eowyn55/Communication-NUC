@@ -1,4 +1,4 @@
 ﻿  main.cpp
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(6): warning C4129: 'T': unrecognized character escape sequence
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(98): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(7): warning C4129: 'T': unrecognized character escape sequence
+c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(118): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
   4segments.vcxproj -> C:\Users\Milica\Documents\Master\GIT\Communication-NUC\openCV\4segments\x64\Debug\4segments.exe
