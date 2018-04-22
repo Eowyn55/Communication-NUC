@@ -6,6 +6,8 @@
 
 // timer flag
 bool flag_timer = false;
+int first_motor;
+int second_motor;
 int cnt = 0;
 MSG Msg;
 
@@ -13,15 +15,18 @@ int main()
 {
 
     #define COMMAND_SIZE          (5)
-	char COMMAND_CAPTURE[COMMAND_SIZE] = { -0xff, -0x04, 0xe8, 0x03, 0x07};
+
+	// RL RH LL LH wait in 100ms
+	// to go forward, L should bi negative
+	char COMMAND_CAPTURE[COMMAND_SIZE] = {-0xff, -0x04, 0xe8, 0x03, 0x07};
 
 	int err;
 	HANDLE CommPort = NULL;
 
 	//timer
-	UINT TimerId = SetTimer(NULL, 0, 1000, NULL); //1000 milliseconds
-	if (!TimerId) 
-		return 16;
+	//UINT TimerId = SetTimer(NULL, 0, 1000, NULL); //1000 milliseconds
+	//if (!TimerId) 
+	//	return 16;
 
 	/* Initialize serial communication. */
 	CommPort = ComPortInit("COM4");
@@ -30,28 +35,46 @@ int main()
 		return -1;
 	}
 
-	while(1) 
-	{
-		if (GetMessage(&Msg, NULL, 0, 0)) {
-			if (Msg.message == WM_TIMER) {
-				cnt = cnt + 1;
-				if (cnt == 11) break;
-				/* Send command. */
-				err = sendData(CommPort, COMMAND_CAPTURE, COMMAND_SIZE);
-				if (err) {
-					printf("failed to send command ping");
-					return -1;
-				}
 
-			}
-			DispatchMessage(&Msg);
+	while (1) {
+		
+
+		std::cout << "Insert the speed of first motor:" << std::endl;
+		std::cin >> first_motor;
+		std::cout << "Insert the speed of second motor:" << std::endl;
+		std::cin >> second_motor;
+
+		COMMAND_CAPTURE[0] = first_motor & 0x00FF;
+		COMMAND_CAPTURE[1] = first_motor >> 8;
+		COMMAND_CAPTURE[2] = second_motor & 0x00FF;
+		COMMAND_CAPTURE[2] = -COMMAND_CAPTURE[2];
+		COMMAND_CAPTURE[3] = second_motor >> 8;
+		COMMAND_CAPTURE[3] = -COMMAND_CAPTURE[3];
+
+		std::cout << "Good!" << std::endl;
+
+		//while (1)
+		//{
+		//	if (GetMessage(&Msg, NULL, 0, 0)) {
+		//		if (Msg.message == WM_TIMER) {
+		//			cnt = cnt + 1;
+		//			if (cnt == 11) break;
+		/* Send command. */
+
+		err = sendData(CommPort, COMMAND_CAPTURE, COMMAND_SIZE);
+		if (err) {
+		    printf("failed to send command ping");
+			return -1;
 		}
+
+		//		}
+		//		DispatchMessage(&Msg);
+		//	}
+		//}
 	}
 
-	
-
 	CloseHandle(CommPort);
-	KillTimer(NULL, TimerId);
+	//KillTimer(NULL, TimerId);
 
 }
 
