@@ -1,5 +1,5 @@
 ﻿  main.cpp
-c:\users\milica\documents\master\git\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4838: conversion from 'int' to 'char' requires a narrowing conversion
-c:\users\milica\documents\master\git\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4305: 'initializing': truncation from 'int' to 'char'
-c:\users\milica\documents\master\git\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4309: 'initializing': truncation of constant value
-  basic_serial.vcxproj -> C:\Users\Milica\Documents\Master\GIT\Communication-NUC\Basic_serial\basic_serial\x64\Debug\basic_serial.exe
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4838: conversion from 'int' to 'char' requires a narrowing conversion
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4305: 'initializing': truncation from 'int' to 'char'
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\basic_serial\basic_serial\basic_serial\main.cpp(21): warning C4309: 'initializing': truncation of constant value
+  basic_serial.vcxproj -> C:\Users\korisnik\Documents\Milica\GIT_ne_diraj\Communication-NUC\Communication-NUC\Basic_serial\basic_serial\x64\Debug\basic_serial.exe

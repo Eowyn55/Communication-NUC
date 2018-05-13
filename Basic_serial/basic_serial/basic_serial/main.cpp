@@ -29,7 +29,7 @@ int main()
 	//	return 16;
 
 	/* Initialize serial communication. */
-	CommPort = ComPortInit("COM4");
+	CommPort = ComPortInit("COM3"); // COM3 for NUC, COM4 for my laptop
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
@@ -38,7 +38,9 @@ int main()
 
 	while (1) {
 		
-
+		// First motor is right motor, second is left motor
+		// Both speeds should be positive, for going farward,
+		// the second speed is turned negative automaticaly
 		std::cout << "Insert the speed of first motor:" << std::endl;
 		std::cin >> first_motor;
 		std::cout << "Insert the speed of second motor:" << std::endl;
@@ -50,8 +52,6 @@ int main()
 		COMMAND_CAPTURE[2] = -COMMAND_CAPTURE[2];
 		COMMAND_CAPTURE[3] = second_motor >> 8;
 		COMMAND_CAPTURE[3] = -COMMAND_CAPTURE[3];
-
-		std::cout << "Good!" << std::endl;
 
 		//while (1)
 		//{
@@ -65,6 +65,8 @@ int main()
 		if (err) {
 		    printf("failed to send command ping");
 			return -1;
+		} else {
+			std::cout << "Command sent!" << std::endl;
 		}
 
 		//		}

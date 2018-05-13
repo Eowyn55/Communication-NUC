@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 	cv::VideoCapture cap;
 
 	if (argc == 1) {
-		cap.open(1); // open the first camera
+		cap.open(0); // open the camera, 0 for NUC, 1 for laptop
 	}
 	else {
 		cap.open(argv[1]);
@@ -56,11 +56,11 @@ int main(int argc, char** argv) {
 	/* PID parameters*/
 
 	//slow movement 
-	int REF_SPEED_LEFT = -1279;
-	int REF_SPEED_RIGHT = 1000;
+	int REF_SPEED_LEFT = -1779; // was -1279
+	int REF_SPEED_RIGHT = 1500; // was 1000
 	int SPEED_HARD_LIMIT = 2600;
 	int SPEED_HARD_LIMIT_LOW = 450;
-	float Kp = 0.4; // pid proportional component
+	float Kp = 1; // pid proportional component working with 0.4
 	float Kd = 0; // pid derivative component
 	float Ki = 0; // pid integral component
 	int slice_errors[4];
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 	HANDLE CommPort = NULL;
 
 	//open COM port for communication
-	CommPort = ComPortInit("COM4");
+	CommPort = ComPortInit("COM3"); // COM4 for laptop, COM3 for NUC
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
 
     // write speeds in a file
 
-	std::ofstream myfile("speeds.txt");
+	std::ofstream myfile("speeds1.txt");
 	if (myfile.is_open()) {
 		myfile << "Left motor.\n";
 		for (int count = 0; count < num_array; count++) {

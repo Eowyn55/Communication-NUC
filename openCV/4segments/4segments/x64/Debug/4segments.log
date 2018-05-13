@@ -1,7 +1,6 @@
 ﻿  main.cpp
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(63): warning C4305: 'initializing': truncation from 'double' to 'float'
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4838: conversion from 'int' to 'char' requires a narrowing conversion
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4305: 'initializing': truncation from 'int' to 'char'
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4309: 'initializing': truncation of constant value
-c:\users\milica\documents\master\git\communication-nuc\opencv\4segments\4segments\main.cpp(137): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-  4segments.vcxproj -> C:\Users\Milica\Documents\Master\GIT\Communication-NUC\openCV\4segments\x64\Debug\4segments.exe
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4838: conversion from 'int' to 'char' requires a narrowing conversion
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4305: 'initializing': truncation from 'int' to 'char'
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4309: 'initializing': truncation of constant value
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(137): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+  4segments.vcxproj -> C:\Users\korisnik\Documents\Milica\GIT_ne_diraj\Communication-NUC\Communication-NUC\openCV\4segments\x64\Debug\4segments.exe
