@@ -23,25 +23,37 @@ void help(char** argv) {
 int main(int argc, char** argv) {
 
 	help(argv);
-	cv::namedWindow("Final", cv::WINDOW_AUTOSIZE);
+	cv::namedWindow("Line tracking", cv::WINDOW_AUTOSIZE);
+	//cv::namedWindow("Object detection", cv::WINDOW_AUTOSIZE);
 
 	cv::VideoCapture cap;
+	//cv::VideoCapture obj;
 
 	if (argc == 1) {
-		cap.open(0); // open the camera, 0 for NUC, 1 for laptop
+		cap.open(0); // open the camera, 0 for NUC, 1 for laptop - line tracking
+		//obj.open(1); // open the camera, 1 for NUC, 2 for laptop - object detection
 	}
 	else {
 		cap.open(argv[1]);
 	}
 
 	if (!cap.isOpened()) { // check if we succeeded
-		std::cerr << "Couldn't open capture." << std::endl;
+		std::cerr << "Couldn't open capture for line tracking." << std::endl;
 		return -1;
 	}
 
+	//if (!obj.isOpened()) { // check if we succeeded
+		//std::cerr << "Couldn't open capture for object detection." << std::endl;
+		//return -1;
+	//}
+
+	// line tracking
 	cv::Mat frame;
 	cv::Mat filtered;
 	cv::Mat no_background;
+
+	// object detection
+	//cv::Mat frame_obj;
 
 	//cv::Mat final_image(frame.rows, frame.cols, CV_8UC3);  //cv_8u3c
 	cv::Mat final_image;
@@ -51,16 +63,18 @@ int main(int argc, char** argv) {
 	int height;
 	int width;
 	int sl;
-	int NUM_SLICES = 4;
+    const int NUM_SLICES = 4;
+
+	int contour_num[NUM_SLICES];
 
 	/* PID parameters*/
 
 	//slow movement 
-	int REF_SPEED_LEFT = -1779; // was -1279
-	int REF_SPEED_RIGHT = 1500; // was 1000
+	int REF_SPEED_LEFT = -1279; // was -1779 // 1279
+	int REF_SPEED_RIGHT = 1000; // was 1500 // 1000
 	int SPEED_HARD_LIMIT = 2600;
 	int SPEED_HARD_LIMIT_LOW = 450;
-	float Kp = 1; // pid proportional component working with 0.4
+	float Kp = 0.5; // pid proportional component working with 0.4 , was even 1
 	float Kd = 0; // pid derivative component
 	float Ki = 0; // pid integral component
 	int slice_errors[4];
@@ -84,14 +98,34 @@ int main(int argc, char** argv) {
 	HANDLE CommPort = NULL;
 
 	//open COM port for communication
-	CommPort = ComPortInit("COM3"); // COM4 for laptop, COM3 for NUC
+	CommPort = ComPortInit("COM5"); // COM4 for laptop, COM3 for NUC
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
 	}
 
+	//frame sizes
+	cv::Size size_line(
+		(int)cap.get(CV_CAP_PROP_FRAME_WIDTH),
+		(int)cap.get(CV_CAP_PROP_FRAME_HEIGHT)/2
+	);
+	//cv::Size size_obj(
+		//(int)obj.get(CV_CAP_PROP_FRAME_WIDTH),
+		//(int)obj.get(CV_CAP_PROP_FRAME_HEIGHT)
+	//);
+
+	//writer to a avi file
+	//cv::VideoWriter writer_line("line.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_line, true);
+	//cv::VideoWriter writer_obj("object.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_obj, true);
+
 	for (;;) {
 
+		//object detection
+		//obj >> frame_obj;
+		//cv::imshow("Object detection", frame_obj);
+		//writer_obj.write(frame_obj);
+
+		// line tracking
 		cap >> frame;
 		height = frame.rows;
 		width = frame.cols;
@@ -129,7 +163,8 @@ int main(int argc, char** argv) {
 			cv::threshold(gray, tresh, 100, 255, cv::THRESH_BINARY_INV); //Get Threshold
 			
 			cv::findContours(tresh, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-			
+			contour_num[i] = contours.size();
+
 			for (int j = 0; j< contours.size(); j++) // iterate through each contour. 
 			{
 				double a = contourArea(contours[j], false);  //  Find the area of contour
@@ -180,10 +215,13 @@ int main(int argc, char** argv) {
 		if ((char)cv::waitKey(33) >= 0) break;
 
 		/*************** PID ********************/
+
+		//if one of the dots go far away from possible 
+		//if (abs(slice_errors[0] - slice_errors[1]) > 180) slice_errors[0] = slice_errors[1];
+		
 		error_cur = slice_errors[0] + slice_errors[1] + slice_errors[2] + slice_errors[3];
 		proportional = error_cur * Kp;
 		derivative = (error_cur - error_prev) * Kd;
-		
 		error_prev = error_cur;
 
 		current_speed_left = static_cast<int>(REF_SPEED_LEFT + proportional + derivative);
@@ -204,7 +242,8 @@ int main(int argc, char** argv) {
 		cv::putText(final_image, ("Left speed is: " + (std::to_string(current_speed_left))), cv::Point(30, final_image.rows - 30), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1, cv::LINE_4);
 		cv::putText(final_image, ("Right speed is: " + (std::to_string(current_speed_right))), cv::Point(30, final_image.rows - 60), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1, cv::LINE_4);
 	
-		cv::imshow("Final", final_image);
+		cv::imshow("Line tracking", final_image);
+		//writer_line.write(final_image);
 
 		current_speed_left = -current_speed_left;
 
