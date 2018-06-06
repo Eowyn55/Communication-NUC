@@ -7,22 +7,8 @@
 #include <string>
 #include "header_main.h"
 
-void help(char** argv) {
-	std::cout << "\n"
-		<< "The same object can load videos from a camera or a file"
-		<< "\nCall:\n"
-		<< argv[0] << " [path/image]\n"
-		<< "\nor, read from camera:\n"
-		<< argv[0]
-		<< "\nFor example:\n"
-		<< argv[0] << " ../tree.avi\n"
-		<< std::endl;
-}
-
-
 int main(int argc, char** argv) {
 
-	help(argv);
 	cv::namedWindow("Line tracking", cv::WINDOW_AUTOSIZE);
 	//cv::namedWindow("Object detection", cv::WINDOW_AUTOSIZE);
 
@@ -269,34 +255,47 @@ int main(int argc, char** argv) {
 
     // write speeds in a file
 
-	std::ofstream myfile("speeds1.txt");
-	if (myfile.is_open()) {
-		myfile << "Left motor.\n";
-		for (int count = 0; count < num_array; count++) {
-			myfile << left_array[count] << " ";
-		}
-		myfile << "\n";
-		myfile << "Right motor.\n";
-		for (int count = 0; count < num_array; count++) {
-			myfile << right_array[count] << " ";
-		}
-		myfile << "\n";
-		myfile << "Error.\n";
-		for (int count = 0; count < num_array; count++) {
-			myfile << error_array[count] << " ";
-		}
+	err = write_speeds(left_array, right_array, error_array, num_array);
+	if (err) {
+		printf("Failed to write speeds and errors in file");
+		return -1;
+	}
 
-	myfile.close();
-	}
-	else {
-		std::cout << "Unable to open file";
-	}
 
 	// close COM port
 	CloseHandle(CommPort);
 
 	return 0;
 
+}
+
+int write_speeds(int* left_speeds, int* right_speeds, int* errors, int n)
+{
+	std::ofstream myfile("speeds1.txt");
+	if (myfile.is_open()) {
+		myfile << "Left motor.\n";
+		for (int count = 0; count < n; count++) {
+			myfile << left_speeds[count] << " ";
+		}
+		myfile << "\n";
+		myfile << "Right motor.\n";
+		for (int count = 0; count < n; count++) {
+			myfile << right_speeds[count] << " ";
+		}
+		myfile << "\n";
+		myfile << "Error.\n";
+		for (int count = 0; count < n; count++) {
+			myfile << errors[count] << " ";
+		}
+
+		myfile.close();
+		return 0;
+	}
+	else {
+		std::cout << "Unable to open file";
+		return 1;
+	}
+	return 1;
 }
 
 HANDLE ComPortInit(const char * comName)
