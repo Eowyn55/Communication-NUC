@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 	HANDLE CommPort = NULL;
 
 	//open COM port for communication
-	CommPort = ComPortInit("COM5"); // COM4 for laptop, COM3 for NUC
+	CommPort = ComPortInit("COM3"); // COM4 for laptop, COM3 for NUC
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
