@@ -1,87 +1,106 @@
+#define _CRT_SECURE_NO_DEPRECATE
 #include <opencv2/opencv.hpp>
+#include "opencv2/objdetect.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <windows.h>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include "header_main.h"
 
+cv::VideoCapture cap;
+cv::VideoCapture obj;
+
+// line tracking
+cv::Mat frame;
+cv::Mat filtered;
+cv::Mat no_background;
+
+// object detection
+cv::Mat frame_obj;
+
+cv::Mat final_image;
+cv::Mat sliced[4];
+
+int height;
+int width;
+int sl;
+const int NUM_SLICES = 4;
+
+int contour_num[NUM_SLICES];
+
+/* PID parameters*/
+
+//slow movement 
+int REF_SPEED_LEFT = -1279; // was -1779 // 1279
+int REF_SPEED_RIGHT = 1000; // was 1500 // 1000
+int SPEED_HARD_LIMIT = 2600;
+int SPEED_HARD_LIMIT_LOW = 450;
+float Kp = 0.5; // pid proportional component working with 0.4 , was even 1
+float Kd = 0; // pid derivative component
+float Ki = 0; // pid integral component
+int slice_errors[4];
+int error_cur = 0;
+int error_prev = 0;
+int current_speed_left = 0;
+int current_speed_right = 0;
+int num_array = 0;  // how many elements there is
+int left_array[15000];
+int right_array[15000];
+int error_array[15000];
+float proportional = 0;
+float derivative = 0;
+
+//sending speeds
+#define COMMAND_SIZE          (5)
+// RL RH LL LH wait in 100ms
+// to go forward, L should bi negative
+char COMMAND_CAPTURE[COMMAND_SIZE] = { -0xff, -0x04, 0xe8, 0x03, 0x07 };
+int err;
+HANDLE CommPort = NULL;
+
+//frame sizes
+cv::Size size_line(
+(int)cap.get(CV_CAP_PROP_FRAME_WIDTH),
+(int)cap.get(CV_CAP_PROP_FRAME_HEIGHT) / 2
+);
+
+//cv::Size size_obj(
+//(int)obj.get(CV_CAP_PROP_FRAME_WIDTH),
+//(int)obj.get(CV_CAP_PROP_FRAME_HEIGHT)
+//);
+
+//writer to a avi file
+//cv::VideoWriter writer_line("line.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_line, true);
+//cv::VideoWriter writer_obj("object.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_obj, true);
+
+
+//Haar cascade Stop sign
+std::string cascade_file_name = "cascade_0999_25.xml";
+cv::Ptr<cv::CascadeClassifier> cascade(new cv::CascadeClassifier(cascade_file_name));
+int stop_flag;
+
 int main(int argc, char** argv) {
 
 	cv::namedWindow("Line tracking", cv::WINDOW_AUTOSIZE);
-	//cv::namedWindow("Object detection", cv::WINDOW_AUTOSIZE);
+	cv::namedWindow("Object detection", cv::WINDOW_AUTOSIZE);
 
-	cv::VideoCapture cap;
-	//cv::VideoCapture obj;
-
-	if (argc == 1) {
-		cap.open(0); // open the camera, 0 for NUC, 1 for laptop - line tracking
-		//obj.open(1); // open the camera, 1 for NUC, 2 for laptop - object detection
-	}
-	else {
-		cap.open(argv[1]);
-	}
+	cap.open(0); // open the camera, 0 for NUC, 1 for laptop - line tracking
+	obj.open(1); // open the camera, 1 for NUC, 2 for laptop - object detection
 
 	if (!cap.isOpened()) { // check if we succeeded
 		std::cerr << "Couldn't open capture for line tracking." << std::endl;
 		return -1;
 	}
 
-	//if (!obj.isOpened()) { // check if we succeeded
-		//std::cerr << "Couldn't open capture for object detection." << std::endl;
-		//return -1;
-	//}
-
-	// line tracking
-	cv::Mat frame;
-	cv::Mat filtered;
-	cv::Mat no_background;
-
-	// object detection
-	//cv::Mat frame_obj;
-
-	//cv::Mat final_image(frame.rows, frame.cols, CV_8UC3);  //cv_8u3c
-	cv::Mat final_image;
-
-	cv::Mat sliced[4];
-
-	int height;
-	int width;
-	int sl;
-    const int NUM_SLICES = 4;
-
-	int contour_num[NUM_SLICES];
-
-	/* PID parameters*/
-
-	//slow movement 
-	int REF_SPEED_LEFT = -1279; // was -1779 // 1279
-	int REF_SPEED_RIGHT = 1000; // was 1500 // 1000
-	int SPEED_HARD_LIMIT = 2600;
-	int SPEED_HARD_LIMIT_LOW = 450;
-	float Kp = 0.5; // pid proportional component working with 0.4 , was even 1
-	float Kd = 0; // pid derivative component
-	float Ki = 0; // pid integral component
-	int slice_errors[4];
-	int error_cur = 0;
-	int error_prev = 0;
-	int current_speed_left = 0;
-	int current_speed_right = 0;
-	int num_array = 0;
-	int left_array[15000];
-	int right_array[15000];
-	int error_array[15000];
-	float proportional = 0;
-	float derivative = 0;
-
-	//sending speeds
-    #define COMMAND_SIZE          (5)
-	// RL RH LL LH wait in 100ms
-	// to go forward, L should bi negative
-	char COMMAND_CAPTURE[COMMAND_SIZE] = { -0xff, -0x04, 0xe8, 0x03, 0x07 };
-	int err;
-	HANDLE CommPort = NULL;
+	if (!obj.isOpened()) { // check if we succeeded
+		std::cerr << "Couldn't open capture for object detection." << std::endl;
+		return -1;
+	}
 
 	//open COM port for communication
 	CommPort = ComPortInit("COM3"); // COM4 for laptop, COM3 for NUC
@@ -90,25 +109,12 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	//frame sizes
-	cv::Size size_line(
-		(int)cap.get(CV_CAP_PROP_FRAME_WIDTH),
-		(int)cap.get(CV_CAP_PROP_FRAME_HEIGHT)/2
-	);
-	//cv::Size size_obj(
-		//(int)obj.get(CV_CAP_PROP_FRAME_WIDTH),
-		//(int)obj.get(CV_CAP_PROP_FRAME_HEIGHT)
-	//);
-
-	//writer to a avi file
-	//cv::VideoWriter writer_line("line.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_line, true);
-	//cv::VideoWriter writer_obj("object.avi", CV_FOURCC('M', 'J', 'P', 'G'), 10, size_obj, true);
-
 	for (;;) {
 
 		//object detection
-		//obj >> frame_obj;
-		//cv::imshow("Object detection", frame_obj);
+		obj >> frame_obj;
+		stop_flag = detectStop(frame_obj, cascade);
+		cv::imshow("Object detection", frame_obj);
 		//writer_obj.write(frame_obj);
 
 		// line tracking
@@ -120,8 +126,6 @@ int main(int argc, char** argv) {
 		if (frame.empty()) break; // Ran out of film
 
 		// Remove background
-
-		// METHOD2
 		cv::GaussianBlur(frame, filtered, cv::Size(7,7), 0);
 		cv::inRange(filtered, cv::Scalar(0, 0, 0), cv::Scalar(100, 100, 100), no_background);
 
@@ -201,9 +205,6 @@ int main(int argc, char** argv) {
 		if ((char)cv::waitKey(33) >= 0) break;
 
 		/*************** PID ********************/
-
-		//if one of the dots go far away from possible 
-		//if (abs(slice_errors[0] - slice_errors[1]) > 180) slice_errors[0] = slice_errors[1];
 		
 		error_cur = slice_errors[0] + slice_errors[1] + slice_errors[2] + slice_errors[3];
 		proportional = error_cur * Kp;
@@ -252,15 +253,12 @@ int main(int argc, char** argv) {
 
     }
 
-
     // write speeds in a file
-
 	err = write_speeds(left_array, right_array, error_array, num_array);
 	if (err) {
 		printf("Failed to write speeds and errors in file");
 		return -1;
 	}
-
 
 	// close COM port
 	CloseHandle(CommPort);
@@ -351,4 +349,52 @@ int sendData(HANDLE comPort, const char * data, int len) {
 	}
 
 	return 0;
+}
+
+/*
+ * description : detect stop sign using haar cascade you've created
+ * img: input image
+ * classifier : preloaded classifier
+ * scale : resize image by
+ */
+int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double scale) {                       
+												
+	enum { BLUE, AQUA, CYAN, GREEN };           // Just some pretty colors to draw with
+	static cv::Scalar colors[] = {
+		cv::Scalar(0, 0, 255),
+		cv::Scalar(0, 128, 255),
+		cv::Scalar(0, 255, 255),
+		cv::Scalar(0, 255, 0)
+	};
+
+	// Image preparation:
+	cv::Mat gray(img.size(), CV_8UC1);
+	cv::Mat small_img(cvSize(cvRound(img.cols / scale),
+		cvRound(img.rows / scale)), CV_8UC1);
+	cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+	cv::resize(gray, small_img, small_img.size(), 0.0, 0.0, cv::INTER_LINEAR);
+	cv::equalizeHist(small_img, small_img);
+
+	// Detect objects if any
+	std::vector<cv::Rect> objects;
+	classifier->detectMultiScale(
+		small_img,                  // input image
+		objects,                    // place for the results
+		1.1,                        // scale factor
+		3,                          // minimum number of neighbors
+		CV_HAAR_DO_CANNY_PRUNING,   // (old format cascades only)
+		cv::Size(60, 60));          // throw away detections smaller than this
+									
+	// Loop through to found objects and draw boxes around them
+	int i = 0;
+	for (std::vector<cv::Rect>::iterator r = objects.begin();
+		r != objects.end(); r++, ++i) {
+		cv::Rect r_ = (*r);
+		r_.x *= scale;
+		r_.y *= scale;
+		r_.width *= scale;
+		r_.height *= scale;
+		cv::rectangle(img, r_, colors[i % 4], 3);
+	}
+	return i;
 }
