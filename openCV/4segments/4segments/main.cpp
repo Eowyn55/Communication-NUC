@@ -82,7 +82,16 @@ cv::Size size_line(
 //Haar cascade Stop sign
 std::string cascade_file_name = "cascade_0999_25.xml";
 cv::Ptr<cv::CascadeClassifier> cascade(new cv::CascadeClassifier(cascade_file_name));
-int stop_flag;
+int stop_cnt = 0;
+
+//Timer 
+enum timStatus {NOT_SET, WAIT_ON_STOP, WAIT_FOR_PERMISION};
+timStatus set_timer = NOT_SET;
+bool flag_timer = false;
+MSG Msg;
+int cnt_5s = 0;
+UINT TimerID;
+
 
 int main(int argc, char** argv) {
 
@@ -113,7 +122,7 @@ int main(int argc, char** argv) {
 
 		//object detection
 		obj >> frame_obj;
-		stop_flag = detectStop(frame_obj, cascade);
+		stop_cnt = detectStop(frame_obj, cascade);
 		cv::imshow("Object detection", frame_obj);
 		//writer_obj.write(frame_obj);
 
@@ -219,6 +228,32 @@ int main(int argc, char** argv) {
 
 		if (current_speed_right < SPEED_HARD_LIMIT_LOW) current_speed_right = SPEED_HARD_LIMIT_LOW;
 		if (current_speed_left > -SPEED_HARD_LIMIT_LOW) current_speed_left = -SPEED_HARD_LIMIT_LOW;
+
+		// stop on STOP sign
+		if ((stop_cnt >= 1) && (set_timer == NOT_SET)) {
+			TimerID = set5sTimer(5000);
+			set_timer = WAIT_ON_STOP;
+			current_speed_right = 0;
+			current_speed_left = 0;
+		}
+		else if ((stop_cnt >= 1) && (set_timer == WAIT_ON_STOP)) {
+			current_speed_right = 0;
+			current_speed_left = 0;
+		}
+
+		// check timer
+		if (GetMessage(&Msg, NULL, 0, 0)) {
+			if ((Msg.message == WM_TIMER) && (set_timer == WAIT_ON_STOP)) {
+				KillTimer(NULL, TimerID);
+				TimerID = set5sTimer(5000);
+				set_timer = WAIT_FOR_PERMISION;
+			}
+			else if ((Msg.message == WM_TIMER) && (set_timer == WAIT_FOR_PERMISION)) {
+				KillTimer(NULL, TimerID);
+				set_timer = NOT_SET;
+			}
+			DispatchMessage(&Msg);
+		}
 
 		left_array[num_array] = current_speed_left;
 		right_array[num_array] = current_speed_right;
@@ -356,9 +391,10 @@ int sendData(HANDLE comPort, const char * data, int len) {
  * img: input image
  * classifier : preloaded classifier
  * scale : resize image by
+ * return int: how many object has been found
  */
-int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double scale) {                       
-												
+int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double scale) {
+
 	enum { BLUE, AQUA, CYAN, GREEN };           // Just some pretty colors to draw with
 	static cv::Scalar colors[] = {
 		cv::Scalar(0, 0, 255),
@@ -384,7 +420,7 @@ int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double s
 		3,                          // minimum number of neighbors
 		CV_HAAR_DO_CANNY_PRUNING,   // (old format cascades only)
 		cv::Size(60, 60));          // throw away detections smaller than this
-									
+
 	// Loop through to found objects and draw boxes around them
 	int i = 0;
 	for (std::vector<cv::Rect>::iterator r = objects.begin();
@@ -397,4 +433,14 @@ int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double s
 		cv::rectangle(img, r_, colors[i % 4], 3);
 	}
 	return i;
+}
+
+UINT set5sTimer(int ms) {
+	UINT TimerId = SetTimer(NULL, 0, ms, NULL);
+	if (!TimerId) {
+		return 0;
+	}
+	else {
+		return TimerId;
+	}
 }
