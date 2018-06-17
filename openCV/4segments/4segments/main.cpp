@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
 #include "header_main.h"
 
 cv::VideoCapture cap;
@@ -88,9 +89,11 @@ int stop_cnt = 0;
 enum timStatus {NOT_SET, WAIT_ON_STOP, WAIT_FOR_PERMISION};
 timStatus set_timer = NOT_SET;
 bool flag_timer = false;
-MSG Msg;
-int cnt_5s = 0;
-UINT TimerID;
+std::chrono::high_resolution_clock::time_point start_time;
+std::chrono::high_resolution_clock::time_point end_time;
+std::chrono::duration<float> duration;
+float max_time_stop = 5;
+float max_time_wait = 15;
 
 
 int main(int argc, char** argv) {
@@ -112,7 +115,7 @@ int main(int argc, char** argv) {
 	}
 
 	//open COM port for communication
-	CommPort = ComPortInit("COM3"); // COM4 for laptop, COM3 for NUC
+	CommPort = ComPortInit("COM5"); // COM4 for laptop, COM3 for NUC
 	if (CommPort == INVALID_HANDLE_VALUE) {
 		printf("com port initialization failed");
 		return -1;
@@ -231,28 +234,28 @@ int main(int argc, char** argv) {
 
 		// stop on STOP sign
 		if ((stop_cnt >= 1) && (set_timer == NOT_SET)) {
-			TimerID = set5sTimer(5000);
+			start_time = std::chrono::high_resolution_clock::now();
 			set_timer = WAIT_ON_STOP;
-			current_speed_right = 0;
-			current_speed_left = 0;
-		}
-		else if ((stop_cnt >= 1) && (set_timer == WAIT_ON_STOP)) {
 			current_speed_right = 0;
 			current_speed_left = 0;
 		}
 
 		// check timer
-		if (GetMessage(&Msg, NULL, 0, 0)) {
-			if ((Msg.message == WM_TIMER) && (set_timer == WAIT_ON_STOP)) {
-				KillTimer(NULL, TimerID);
-				TimerID = set5sTimer(5000);
+		if (set_timer == WAIT_ON_STOP) {
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = end_time - start_time;
+			current_speed_right = 0;
+			current_speed_left = 0;
+			if (duration.count() > max_time_stop) {
 				set_timer = WAIT_FOR_PERMISION;
 			}
-			else if ((Msg.message == WM_TIMER) && (set_timer == WAIT_FOR_PERMISION)) {
-				KillTimer(NULL, TimerID);
+		}
+		else if (set_timer == WAIT_FOR_PERMISION) {
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = end_time - start_time;
+			if (duration.count() > max_time_wait) {
 				set_timer = NOT_SET;
 			}
-			DispatchMessage(&Msg);
 		}
 
 		left_array[num_array] = current_speed_left;
@@ -419,7 +422,7 @@ int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double s
 		1.1,                        // scale factor
 		3,                          // minimum number of neighbors
 		CV_HAAR_DO_CANNY_PRUNING,   // (old format cascades only)
-		cv::Size(60, 60));          // throw away detections smaller than this
+		cv::Size(100, 100));          // throw away detections smaller than this
 
 	// Loop through to found objects and draw boxes around them
 	int i = 0;
@@ -435,12 +438,3 @@ int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double s
 	return i;
 }
 
-UINT set5sTimer(int ms) {
-	UINT TimerId = SetTimer(NULL, 0, ms, NULL);
-	if (!TimerId) {
-		return 0;
-	}
-	else {
-		return TimerId;
-	}
-}
