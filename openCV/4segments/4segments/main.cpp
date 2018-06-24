@@ -81,18 +81,31 @@ cv::Size size_line(
 
 
 //Haar cascade Stop sign
-std::string cascade_file_name = "cascade_0999_25.xml";
-cv::Ptr<cv::CascadeClassifier> cascade(new cv::CascadeClassifier(cascade_file_name));
+std::string cascade_stop_file_name = "cascade_0999_25.xml";
+cv::Ptr<cv::CascadeClassifier> cascade_stop(new cv::CascadeClassifier(cascade_stop_file_name));
 int stop_cnt = 0;
 
+//Haar cascade Traficlight
+std::string cascade_trafic_file_name = "cascade_traficlight.xml";
+cv::Ptr<cv::CascadeClassifier> cascade_trafic(new cv::CascadeClassifier(cascade_trafic_file_name));
+int trafic_cnt = 0;
+int light = 0;
+std::vector<cv::Rect> objects_trafic;
+std::vector<cv::Rect> objects_trafic_save;
+bool flag_red_detected = false;
+bool flag_green_detected = false;
+int cnt_red = 0;
+int cnt_green = 0;
+
 //Timer 
-enum timStatus {NOT_SET, WAIT_ON_STOP, WAIT_FOR_PERMISION};
+enum timStatus {NOT_SET, WAIT_ON_STOP, WAIT_FOR_PERMISION, SET_TRAFIC};
 timStatus set_timer = NOT_SET;
 bool flag_timer = false;
 std::chrono::high_resolution_clock::time_point start_time;
 std::chrono::high_resolution_clock::time_point end_time;
 std::chrono::duration<float> duration;
 float max_time_stop = 5;
+float max_time_trafic = 2;
 float max_time_wait = 15;
 
 
@@ -125,7 +138,24 @@ int main(int argc, char** argv) {
 
 		//object detection
 		obj >> frame_obj;
-		stop_cnt = detectStop(frame_obj, cascade);
+		stop_cnt = detectStop(frame_obj, cascade_stop);
+		if (flag_green_detected == false) {
+			light = detectTraficLight(frame_obj, cascade_trafic);
+			if (light == 1) {
+				cv::putText(frame_obj, "RED", cv::Point(frame.cols / 2, frame.rows / 2), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2, cv::LINE_4);
+				cnt_red++;
+				cnt_green = 0;
+			}
+			else if (light == 2) {
+				cv::putText(frame_obj, "GREEN", cv::Point(frame.cols / 2, frame.rows / 2), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2, cv::LINE_4);
+				cnt_green++;
+				cnt_red = 0;
+			}
+			else {
+				cnt_red = 0;
+				cnt_green = 0;
+			}
+		}
 		cv::imshow("Object detection", frame_obj);
 		//writer_obj.write(frame_obj);
 
@@ -148,7 +178,7 @@ int main(int argc, char** argv) {
 
 		for (int i = 0; i < NUM_SLICES; i++) {
 
-			int x, y; // position of the centre of the contour of this slice
+			int x, y = 0; // position of the centre of the contour of this slice
 
 			int largest_area = 0;
 			int largest_contour_index = 0;
@@ -255,6 +285,40 @@ int main(int argc, char** argv) {
 			duration = end_time - start_time;
 			if (duration.count() > max_time_wait) {
 				set_timer = NOT_SET;
+			}
+		}
+
+		//stop on trafic light
+		if ((trafic_cnt >= 1) && (flag_green_detected != true)) {
+			if (set_timer == NOT_SET) {
+				current_speed_right = 0;
+				current_speed_left = 0;
+				start_time = std::chrono::high_resolution_clock::now();
+				set_timer = SET_TRAFIC;
+			} 
+			else if (set_timer == SET_TRAFIC) {
+				end_time = std::chrono::high_resolution_clock::now();
+				duration = end_time - start_time;
+				if (duration.count() > max_time_trafic) {
+					if (cnt_red > 0) {
+						flag_red_detected = true;
+						current_speed_right = 0;
+						current_speed_left = 0;
+					}
+					else if (cnt_green > 0) {
+						flag_green_detected = true;
+					}
+					set_timer = NOT_SET;
+				}
+				else {
+					current_speed_right = 0;
+					current_speed_left = 0;
+				}
+			}
+			else if (flag_red_detected) {
+				if (cnt_green > 0) {
+					flag_green_detected = true;
+				}
 			}
 		}
 
@@ -438,3 +502,96 @@ int detectStop(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double s
 	return i;
 }
 
+/*
+* description : detect stop sign using haar cascade you've created
+* img: input image
+* classifier : preloaded classifier
+* scale : resize image by
+* return int: how many object has been found
+*/
+int detectTraficLight(cv::Mat& img, cv::Ptr<cv::CascadeClassifier> classifier, double scale) {
+
+	enum { BLUE, AQUA, CYAN, GREEN };           // Just some pretty colors to draw with
+	static cv::Scalar colors[] = {
+		cv::Scalar(0, 255, 0),
+		cv::Scalar(0, 255, 255),
+		cv::Scalar(0, 128, 255),
+		cv::Scalar(0, 0, 255)
+	};
+
+	// Image preparation:
+	cv::Mat object_rect;
+	cv::Mat object_rect_up;
+	cv::Mat object_rect_down;
+	cv::Mat gray(img.size(), CV_8UC1);
+	cv::Mat small_img(cvSize(cvRound(img.cols / scale),
+		cvRound(img.rows / scale)), CV_8UC1);
+	cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+	cv::resize(gray, small_img, small_img.size(), 0.0, 0.0, cv::INTER_LINEAR);
+	//cv::equalizeHist(small_img, small_img);
+
+	// Detect objects if any
+	//if (trafic_cnt == 0) {
+		classifier->detectMultiScale(
+			small_img,                  // input image
+			objects_trafic,                    // place for the results
+			1.1,                        // scale factor
+			3,                          // minimum number of neighbors
+			CV_HAAR_DO_CANNY_PRUNING,   // (old format cascades only)
+			cv::Size(30, 30));          // throw away detections smaller than this
+	//}
+
+	if (!objects_trafic.empty()) {
+		trafic_cnt++;
+		if (set_timer != WAIT_FOR_PERMISION) {
+			objects_trafic_save = objects_trafic;
+		}
+	}
+	else if (set_timer != WAIT_FOR_PERMISION){
+		objects_trafic = objects_trafic_save;
+	}
+									  // Loop through to found objects and draw boxes around them
+	int i = 0;
+	for (std::vector<cv::Rect>::iterator r = objects_trafic.begin();
+		r != objects_trafic.end(); r++, ++i) {
+		cv::Rect r_ = (*r);
+		r_.x *= scale;
+		r_.y *= scale;
+		r_.width *= scale;
+		r_.height *= scale;
+		cv::rectangle(img, r_, colors[i % 4], 3);
+		object_rect = cv::Mat(img, r_);
+		cvtColor(object_rect, object_rect, cv::COLOR_BGR2GRAY);
+		cv::GaussianBlur(object_rect, object_rect, cv::Size(25, 25), 0, 0);
+		int height = object_rect.rows;
+		int width = object_rect.cols;
+		object_rect_up = object_rect(cv::Rect(0, 0, width, height / 2));
+		object_rect_down = object_rect(cv::Rect(0, height / 2, width, height / 2));
+		int sum_up = sum_of_gray(object_rect_up);
+		int sum_down = sum_of_gray(object_rect_down);
+		if (sum_up > sum_down) {
+			return 1;
+		}
+		else if (sum_up < sum_down) {
+			return 2;
+		}
+		else {
+			return 0;
+		}
+	}
+}
+
+int sum_of_gray(cv::Mat input_image) {
+	int height = input_image.rows;
+	int width = input_image.cols;
+	int sum = 0;
+	for (int j = 0; j<height; j++)
+	{
+		for (int i = 0; i<width; i++)
+		{
+			int d = input_image.at<uchar>(j, i);
+			sum += d;
+		}
+	}
+	return sum;
+}
