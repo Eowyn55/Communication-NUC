@@ -1,7 +1,15 @@
 ﻿  main.cpp
-c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4838: conversion from 'int' to 'char' requires a narrowing conversion
-c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4305: 'initializing': truncation from 'int' to 'char'
-c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(82): warning C4309: 'initializing': truncation of constant value
-c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(152): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(158): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(63): warning C4305: 'initializing': truncation from 'int' to 'char'
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(63): warning C4309: 'initializing': truncation of constant value
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(200): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(206): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(498): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(499): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(500): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(501): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(560): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(561): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(562): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(563): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
+c:\users\korisnik\documents\milica\git_ne_diraj\communication-nuc\communication-nuc\opencv\4segments\4segments\main.cpp(584): warning C4715: 'detectTraficLight': not all control paths return a value
   4segments.vcxproj -> C:\Users\korisnik\Documents\Milica\GIT_ne_diraj\Communication-NUC\Communication-NUC\openCV\4segments\x64\Debug\4segments.exe

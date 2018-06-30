@@ -171,6 +171,8 @@ int main(int argc, char** argv) {
 		cv::GaussianBlur(frame, filtered, cv::Size(7,7), 0);
 		cv::inRange(filtered, cv::Scalar(0, 0, 0), cv::Scalar(100, 100, 100), no_background);
 
+		//cv::imshow("Line tracking", no_background);
+
 		// Slice image to 4 segments:
 		height = frame.rows;
 		width = frame.cols;
